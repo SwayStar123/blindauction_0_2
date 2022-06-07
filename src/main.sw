@@ -13,6 +13,7 @@ use std::{
     context::msg_amount,
     block::height,
     result::*,
+    storage::StorageMap,
 };
 
 abi MyContract {
@@ -32,6 +33,7 @@ storage {
     ended: bool,
     highestBidder: Address,
     highestBid: u64,
+    pendingReturns: StorageMap<Address, u64> = StorageMap::new(),
 }
 
 const BIDS: b256 = 0x0000000000000000000000000000000000000000000000000000000000000000;
@@ -139,9 +141,11 @@ impl MyContract for Contract {
     }
 
     fn withdraw() {
-        let amount = get_pending_returns(get_sender());
+        // let amount = get_pending_returns(get_sender());
+        let amount = storage.pendingReturns.get(get_sender());
         if amount > 0 {
-            add_pending_return(get_sender(), 0);
+            // add_pending_return(get_sender(), 0);
+            storage.pendingReturns.insert(get_sender(), 0);
             transfer_to_output(amount, ~ContractId::from(ETH), get_sender());
         };
     }
@@ -177,7 +181,8 @@ fn place_bid(addy: Address, value: u64) -> bool {
         return false;
     };
     if storage.highestBidder != ~Address::from(0x0000000000000000000000000000000000000000000000000000000000000000) {
-        add_pending_return(storage.highestBidder, storage.highestBid);
+        // add_pending_return(storage.highestBidder, storage.highestBid);
+        storage.pendingReturns.insert(storage.highestBidder, storage.highestBid);
     };
     storage.highestBidder = addy;
     storage.highestBid = value;
